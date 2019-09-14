@@ -8,14 +8,8 @@
   <meta name="description" content="">
   <meta name="author" content="">
 <style>
-div#testing { 
-        position: absolute;
-        z-index: 91;
-        overflow: auto;
-        border: 0;
-        width: 100px;
-        height: 100px;
-    }
+body { overflow: hidden; }
+p {text-align: justify; }
 </style>
 
 </head>
@@ -37,34 +31,30 @@ var t = "<div style='text-align:center;color:red;'><p style='text-align:center;'
 
 var Main = document.getElementById("_main");
 
-var TextFrame = function(name, layer) {
-    var framename = name;
+var TextFrame = function(framename, layer) {
+    var name = framename;
     var css = document.createElement('style');
     var size = {
         ratio_min: 0,
         ratio_max: 1,
-        dx_min: 100,
-        dy_min: 100            
+        dx_min: 0,
+        dy_min: 0            
     }
     var margin = {
         top: 1,
-        left: 100,
-        right: 100,
-        bottom: 100,
+        left: 1,
+        right: 2,
+        bottom: 2,
         topR: 0,
         leftR: 0,
         rightR: 0,
         bottomR: 0
     }
     var padding = {
-        top: 10,
-        left: 20,
-        right: 20,
-        bottom: 10,
-        topR: 30,
-        leftR: 50,
-        rightR: 50,
-        bottomR: 30
+        top: 1,
+        left: 1.75,
+        right: 1.75,
+        bottom: 1
     }
     var visible = false;
     var textBottom;
@@ -74,8 +64,10 @@ var TextFrame = function(name, layer) {
     var w_format = new Array();
     var w_length = 0;
     var words_in_page = 0;
-    var w_offset;
+    var w_offset = 0;
     var w_nextpage;
+    var fontSize = 40.0;
+    var pcss = false;
 
 
 
@@ -87,27 +79,29 @@ var TextFrame = function(name, layer) {
         var x, y, dx, dy;
         var x0, y0, dx0, dy0;
 
-        dx0 = scrDX - margin.left - margin.right -
-            Math.round(margin.rightR * scrDX / 1000) -
-            Math.round(margin.leftR * scrDX / 1000);
-        dy0 = scrDY - margin.top - margin.bottom -
-            Math.round(margin.topR * scrDY / 1000) -
-            Math.round(margin.bottomR * scrDY / 1000);
+        var ml = margin.left + Math.round(margin.leftR * scrDX / 1000);
+        var mr = margin.right + Math.round(margin.rightR * scrDX / 1000);
+        var mt = margin.top + Math.round(margin.topR * scrDY / 1000);
+        var mb = margin.bottom + Math.round(margin.bottomR * scrDY / 1000);
+
+        dx0 = scrDX - ml - mr;
+        dy0 = scrDY - mt - mb;
         if(dx0 < size.dx_min) dx0 = size.dx_min;
         if(dy0 < size.dy_min) dy0 = size.dy_min;
+        x0 = ml + ((scrDX - dx0 - ml - mr) >> 1);
+        y0 = mt;
 
-        x0 = (scrDX - dx0) >> 1;
-        y0 = margin.top;
+        var fontsz = Math.round(Math.sqrt(dx0 * dy0) / fontSize);
 
-        dx = dx0 - padding.left - padding.right -
-            Math.round(padding.rightR * dx0 / 1000) -
-            Math.round(padding.leftR * dx0 / 1000);
-        dy = dy0 - padding.top - padding.bottom -
-            Math.round(padding.topR * dy0 / 1000) -
-            Math.round(padding.bottomR * dy0 / 1000);
+        var pl = Math.round(fontsz * padding.left);
+        var pr = Math.round(fontsz * padding.right);
+        var pt = Math.round(fontsz * padding.top);
+        var pb = Math.round(fontsz * padding.bottom);
 
-        x = x0 + ((dx0 - dx) >> 1);
-        y = y0 + ((dy0 - dy) >> 1);
+        dx = dx0 - pl - pr;
+        dy = dy0 - pt - pb;
+        x = x0 + pl;
+        y = y0 + pt;
         textBottom = y + dy;
 
         Outer.style.left = x0 + "px";
@@ -118,6 +112,24 @@ var TextFrame = function(name, layer) {
         Inner.style.top = y + "px";
         Inner.style.width = dx + "px";
         Inner.style.height = dy + "px";
+
+        PgUp.style.left = x0 + "px";
+        PgUp.style.top = y0 + "px";
+        PgUp.style.width = x - x0 + "px";
+        PgUp.style.height = dy0 + "px";
+
+        if(pcss){
+        	var sheetToBeRemoved = document.getElementById(name+"_pcss");
+			var sheetParent = sheetToBeRemoved.parentNode;
+			sheetParent.removeChild(sheetToBeRemoved);
+        }
+    	
+    	var psheet = document.createElement('style');
+    	psheet.innerHTML =
+    	"div#" + innerName + " { font-size:" + fontsz + "px; }";
+    	psheet.setAttribute("id", name+"_pcss");
+    	document.head.appendChild(psheet);
+    	pcss = true;
 
         renderText();
     }
@@ -219,10 +231,9 @@ var TextFrame = function(name, layer) {
     }
 
     function isWordVisible(word) {
-        console.log("Word:" + word + " w_length:" + w_length + "\n");
         if(word >= w_length) return false;
         trimTextBy(word);
-        if(document.getElementById("_hide").
+        if(document.getElementById(hideName).
             getBoundingClientRect().bottom < textBottom) return true;
         return false;
     }
@@ -234,7 +245,7 @@ var TextFrame = function(name, layer) {
             text.substring(w_format[w_offset],w_start[w_offset]) + "</a>";
         if(word < w_length) {
             txt += text.substring(w_start[w_offset], w_start[word]) +
-                "<a id='_hide' style='visibility:hidden;'>" +
+                "<a id='" + hideName + "'>" +
                 text.substring(w_start[word], w_end[word]) +
                 "</a>";
         }
@@ -246,12 +257,46 @@ var TextFrame = function(name, layer) {
 
 
 //------------------initialization
-    Main.innerHTML += "<div id='" + framename + "' style='position: absolute; z-index: " +
-        (layer + 1) + "; overflow: visible; border: 0; display: none;'></div>" + "\n";
-    Main.innerHTML += "<div id='" + framename + "0' style='position: absolute; z-index: " +
-        layer + "; border: 1px solid; display: none;'></div>" + "\n";
-    var Inner = document.getElementById(framename);
-    var Outer = document.getElementById(framename + "0");
+	var innerName = name;
+	var outerName = name + "_out";
+	var pgUpName = name + "_pgup";
+	var pgDnName = name + "_pgdn";
+	var hideName = name + "_hide";
+
+    Main.innerHTML += "<div id='" + innerName + "'></div>" + "\n";
+    Main.innerHTML += "<div id='" + outerName + "'></div>" + "\n";
+    Main.innerHTML += "<div id='" + pgUpName + "'></div>" + "\n";
+    Main.innerHTML += "<div id='" + pgDnName + "'></div>" + "\n";
+    var Inner = document.getElementById(innerName);
+    var Outer = document.getElementById(outerName);
+    var PgUp = document.getElementById(pgUpName);
+    var PgDown = document.getElementById(pgDnName);
+    
+    var sheet = document.createElement('style');
+    sheet.innerHTML =
+    	"div#" + innerName +
+    	"{ position:absolute; z-index:" + (layer + 1) +
+        "; overflow: visible; border: 0; display: none; background-color: beige; }\n" +
+    	"div#" + outerName +
+    	"{ position:absolute; z-index:" + layer +
+        "; border: 1px solid; display: none; }\n" +
+    	"div#" + pgUpName +
+    	"{ position:absolute; z-index:" + (layer + 1) +
+        "; border: 0; display: none; }\n" +
+    	"div#" + pgDnName +
+    	"{ position:absolute; z-index:" + (layer + 1) +
+        "; border: 0; display: none; }\n" +
+    	"div#" + pgUpName + ":hover " +
+    	"{ background: linear-gradient(90deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 100%); }\n" + 
+    	"div#" + pgDnName + ":hover " +
+    	"{ background: linear-gradient(270deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 100%); }\n" + 
+    	"div#" + pgUpName + ":active " +
+    	"{ background: linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%); }\n" + 
+    	"div#" + pgDnName + ":active " +
+    	"{ background: linear-gradient(270deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%); }\n" +
+    	"a#" + hideName + " { visibility: hidden; }";
+    sheet.setAttribute("id", name+"css");
+    document.body.appendChild(sheet);
 
     window.addEventListener("resize", this.render);
 
@@ -267,9 +312,9 @@ var TextFrame = function(name, layer) {
 
 
 
-var testing = new TextFrame("testing", 90);
-testing.setText(t);
-testing.show();
+var main = new TextFrame("main", 90);
+main.setText(t);
+main.show();
 
     
     
