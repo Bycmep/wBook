@@ -9,7 +9,7 @@
   <meta name="author" content="">
 <style>
 body { overflow: hidden; }
-p {text-align: justify; }
+p {text-align: justify; text-indent: 2em; margin: 0; }
 </style>
 
 </head>
@@ -114,9 +114,12 @@ var TextFrame = function(framename, layer) {
         Inner.style.height = dy + "px";
 
         PgUp.style.left = x0 + "px";
-        PgUp.style.top = y0 + "px";
-        PgUp.style.width = x - x0 + "px";
-        PgUp.style.height = dy0 + "px";
+        PgDn.style.left = x0 + dx + "px";
+        PgUp.style.top = PgDn.style.top = y0 + "px";
+        PgUp.style.width = dx0 - dx - x + "px"; 
+        PgDn.style.width = x - x0 + "px";
+        PgUp.style.height = PgDn.style.height = dy0 + "px";
+		PgDn.style.left = x + dx + "px";
 
         if(pcss){
         	var sheetToBeRemoved = document.getElementById(name+"_pcss");
@@ -138,6 +141,8 @@ var TextFrame = function(framename, layer) {
         if(visible) return;
         Inner.style.display = "block";
         Outer.style.display = "block";
+        PgUp.style.display = "block";
+        PgDn.style.display = "block";
         visible = true;
         this.render();
     }
@@ -146,6 +151,8 @@ var TextFrame = function(framename, layer) {
         if(!visible) return;
         Inner.style.display = "none";
         Outer.style.display = "none";
+        PgUp.style.display = "none";
+        PgDn.style.display = "none";
         visible = false;
     }
 
@@ -270,13 +277,13 @@ var TextFrame = function(framename, layer) {
     var Inner = document.getElementById(innerName);
     var Outer = document.getElementById(outerName);
     var PgUp = document.getElementById(pgUpName);
-    var PgDown = document.getElementById(pgDnName);
+    var PgDn = document.getElementById(pgDnName);
     
     var sheet = document.createElement('style');
     sheet.innerHTML =
     	"div#" + innerName +
     	"{ position:absolute; z-index:" + (layer + 1) +
-        "; overflow: visible; border: 0; display: none; background-color: beige; }\n" +
+        "; overflow: visible; border: 0; display: none; }\n" +
     	"div#" + outerName +
     	"{ position:absolute; z-index:" + layer +
         "; border: 1px solid; display: none; }\n" +
@@ -287,13 +294,13 @@ var TextFrame = function(framename, layer) {
     	"{ position:absolute; z-index:" + (layer + 1) +
         "; border: 0; display: none; }\n" +
     	"div#" + pgUpName + ":hover " +
-    	"{ background: linear-gradient(90deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 100%); }\n" + 
+    	"{ background: linear-gradient(90deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" + 
     	"div#" + pgDnName + ":hover " +
-    	"{ background: linear-gradient(270deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 100%); }\n" + 
+    	"{ background: linear-gradient(270deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" + 
     	"div#" + pgUpName + ":active " +
-    	"{ background: linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%); }\n" + 
+    	"{ background: linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 100%); }\n" + 
     	"div#" + pgDnName + ":active " +
-    	"{ background: linear-gradient(270deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%); }\n" +
+    	"{ background: linear-gradient(270deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 100%); }\n" +
     	"a#" + hideName + " { visibility: hidden; }";
     sheet.setAttribute("id", name+"css");
     document.body.appendChild(sheet);
