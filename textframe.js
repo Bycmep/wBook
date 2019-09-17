@@ -1,4 +1,4 @@
-var TextFrame = function(framename, layer) {
+var TextFrame = function (framename, layer) {
     var name = framename;
     var css = document.createElement('style');
     var size = {
@@ -6,8 +6,7 @@ var TextFrame = function(framename, layer) {
         ratio_max: 1,
         dx_min: 0,
         dy_min: 0            
-    }
-    var margin = {
+    }, margin = {
         top: 1,
         left: 1,
         right: 2,
@@ -16,14 +15,15 @@ var TextFrame = function(framename, layer) {
         leftR: 0,
         rightR: 0,
         bottomR: 0
-    }
-    var padding = {
+    }, padding = {
         top: 1,
         left: 1.75,
         right: 1.75,
         bottom: 1
     }
     var visible = false;
+    var x, dx, dy;
+    var x0, y0, dx0, dy0;
     var y, textBottom;
     var text = "";
     var w_start = new Array();
@@ -34,6 +34,7 @@ var TextFrame = function(framename, layer) {
     var w_offset = 0;
     var w_nextpage;
     var fontSize = 40.0;
+    var fontStep = 1.01;
     var pcss = false;
     var pageStart = new Array();
     var currentPage = 0;
@@ -45,8 +46,6 @@ var TextFrame = function(framename, layer) {
 
         var scrDX = document.documentElement.clientWidth;
         var scrDY = document.documentElement.clientHeight;
-        var x, dx, dy;
-        var x0, y0, dx0, dy0;
 
         var ml = margin.left + Math.round(margin.leftR * scrDX / 1000);
         var mr = margin.right + Math.round(margin.rightR * scrDX / 1000);
@@ -60,7 +59,7 @@ var TextFrame = function(framename, layer) {
         x0 = ml + ((scrDX - dx0 - ml - mr) >> 1);
         y0 = mt;
 
-        var fontsz = Math.round(Math.sqrt(dx0 * dy0) / fontSize);
+        var fontsz = Math.max(dx0, dy0) / fontSize;
 
         var pl = Math.round(fontsz * padding.left);
         var pr = Math.round(fontsz * padding.right);
@@ -101,6 +100,7 @@ var TextFrame = function(framename, layer) {
         	var psheet = document.createElement('style');
         	psheet.innerHTML =
         	"div#" + innerName + " { font-size:" + fontsz + "px; }";
+            console.log(fontsz);
         	psheet.setAttribute("id", name+"_pcss");
         	document.head.appendChild(psheet);
         	pcss = true;
@@ -342,6 +342,28 @@ var TextFrame = function(framename, layer) {
     window.addEventListener("resize", resizePage);
     PgDn.addEventListener("click", nextPage);
     PgUp.addEventListener("click", prevPage);
+    window.addEventListener("keydown", navKeys);
+    
+    function navKeys() {
+        var key = event.key;
+        if(key == "PageDown") nextPage();
+        if(key == "PageUp") prevPage();
+        if(key == "+") fontUp();
+        if(key == "-") fontDown();
+        
+    }
+    
+    function fontUp() {
+        if(!visible) return;
+        fontSize /= fontStep;
+        renderPage();
+    }
+
+    function fontDown() {
+        if(!visible) return;
+        fontSize *= fontStep;
+        renderPage();
+    }
 
 
     return {
