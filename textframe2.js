@@ -2,24 +2,8 @@
 function TextFrame(name, layer) {
     'use strict';
     var e,                  // elements
-        text;               // frame text
-/*        
-        visible = false,    // text frame properties
-        margin = {
-            top: 1,
-            left: 1,
-            right: 2,
-            bottom: 2
-        },
-        padding = {
-                top: 1,
-                left: 1.75,
-                right: 1.75,
-                bottom: 1
-        },
-        
-        fontSize;           // font properties
-*/
+        text,                // frame text
+        page;               // page properties
 
     function FrameElements() {
         var Main,
@@ -63,7 +47,8 @@ function TextFrame(name, layer) {
             Inner: Inner,
             Outer: Outer,
             PgUp: PgUp,
-            PgDn: PgDn
+            PgDn: PgDn,
+            divname: innerName
         };
     }
     e = new FrameElements();
@@ -145,118 +130,126 @@ function TextFrame(name, layer) {
     function setText(input) {
         text = new ParsedText(input);
     }
-/*    
-    function renderPage() {
-        var scrDX,
-            scrDY,
-            fontSizePx,
-            paddingLeft,
-            paddingRight,
-            paddingTop,
-            paddingBottom,
-            x0,
-            y0,
-            dx0,
-            dy0;
-            
-
-        if (!visible) {
-            return;
-        }
+    
+    function TextPage() {
+        var visible = false,
+            margin = {
+                top: 1,
+                left: 1,
+                right: 2,
+                bottom: 2
+            },
+            padding = {
+                top: 1,
+                left: 1.75,
+                right: 1.75,
+                bottom: 1
+            },
+            fontSize,
+            resizing = false,
         
-        scrDX = document.documentElement.clientWidth;
-        scrDY = document.documentElement.clientHeight;
-        dx0 = scrDX - margin.left - margin.right;
-        dy0 = scrDY - margin.top - margin.bottom;
-        x0 = margin.left + Math.round((scrDX - dx0 - margin.left - margin.right) / 2);
-        y0 = margin.top;
-        
-        fontsz = Math.max(dx0, dy0) / fontSize;
-        
-        paddingLeft = Math.round(fontsz * padding.left);
-        paddingRight = Math.round(fontsz * padding.right);
-            pt = Math.round(fontsz * padding.top),
-            pb = Math.round(fontsz * padding.bottom),
-            sheetToBeRemoved,
-            sheetParent;
+        function render() {
+            var scrDX,
+                scrDY,
+                fontSizePx,
+                paddingLeft,
+                paddingRight,
+                paddingTop,
+                paddingBottom,
+                x0,
+                y0,
+                dx0,
+                dy0,
+                x,
+                y,
+                dx,
+                dy,
+                textBottom,
+                pcss = false,
+                fontSizeSheet,
+                fontSizeSheetParent;
 
-
-        var 
-
-            ml = margin.left + Math.round(margin.leftR * scrDX),
-            mr = margin.right + Math.round(margin.rightR * scrDX),
-            mt = margin.top + Math.round(margin.topR * scrDY),
-            mb = margin.bottom + Math.round(margin.bottomR * scrDY),
-
-
-            pl = Math.round(fontsz * padding.left),
-            pr = Math.round(fontsz * padding.right),
-            pt = Math.round(fontsz * padding.top),
-            pb = Math.round(fontsz * padding.bottom),
-            sheetToBeRemoved,
-            sheetParent;
-
-
-        
-
-
-        dx = dx0 - pl - pr;
-        dy = dy0 - pt - pb;
-        x = x0 + pl;
-        y = y0 + pt;
-        textBottom = y + dy;
-
-        Outer.style.left = x0 + "px";
-        Outer.style.top = y0 + "px";
-        Outer.style.width = dx0 + "px";
-        Outer.style.height = dy0 + "px";
-        Inner.style.left = x + "px";
-        Inner.style.top = y + "px";
-        Inner.style.width = dx + "px";
-        Inner.style.height = dy + "px";
-
-        PgUp.style.left = x0 + "px";
-        PgDn.style.left = x0 + dx + "px";
-        PgUp.style.top = PgDn.style.top = y0 + "px";
-        PgUp.style.width = dx0 - dx - x + "px";
-        PgDn.style.width = x - x0 + "px";
-        PgUp.style.height = PgDn.style.height = dy0 + "px";
-        PgDn.style.left = x + dx + "px";
-
-
-        if (resizing) {
-
-            if (pcss) {
-                sheetToBeRemoved = document.getElementById(name + "_pcss");
-                sheetParent = sheetToBeRemoved.parentNode;
-                sheetParent.removeChild(sheetToBeRemoved);
+            if (!visible) {
+                return;
             }
-            var psheet = document.createElement('style');
-            psheet.innerHTML = "div#" + innerName + " { font-size:" + fontsz + "px; }";
-            console.log(fontsz);
-            psheet.setAttribute("id", name + "_pcss");
-            document.head.appendChild(psheet);
-            pcss = true;
 
-            if (target_off > -1) {
+            scrDX = document.documentElement.clientWidth;
+            scrDY = document.documentElement.clientHeight;
+            dx0 = scrDX - margin.left - margin.right;
+            dy0 = scrDY - margin.top - margin.bottom;
+            x0 = margin.left + Math.round((scrDX - dx0 - margin.left - margin.right) / 2);
+            y0 = margin.top;
 
-                w_offset = 0;
-                currentPage = 0;
-                var olap = 0, target = (target_nxt - target_off) / 2;
+            fontSizePx = Math.max(dx0, dy0) / fontSize;
+            paddingLeft = Math.round(fontSizePx * padding.left);
+            paddingRight = Math.round(fontSizePx * padding.right);
+            paddingTop = Math.round(fontSizePx * padding.top);
+            paddingBottom = Math.round(fontSizePx * padding.bottom);
 
-                renderText();
+            dx = dx0 - paddingLeft - paddingRight;
+            dy = dy0 - paddingTop - paddingBottom;
+            x = x0 + paddingLeft;
+            y = y0 + paddingTop;
+            textBottom = y + dy;
 
-                olap = overlap(target_off, target_nxt, w_offset, w_nextpage);
+            e.Outer.style.left = x0 + "px";
+            e.Outer.style.top = y0 + "px";
+            e.Outer.style.width = dx0 + "px";
+            e.Outer.style.height = dy0 + "px";
+            e.Inner.style.left = x + "px";
+            e.Inner.style.top = y + "px";
+            e.Inner.style.width = dx + "px";
+            e.Inner.style.height = dy + "px";
 
-                while (olap < target && olap < (w_nextpage - w_offset)) {
-                    nextPage();
+            e.PgUp.style.left = x0 + "px";
+            e.PgDn.style.left = x0 + dx + "px";
+            e.PgUp.style.top = e.PgDn.style.top = y0 + "px";
+            e.PgUp.style.width = dx0 - dx - x + "px";
+            e.PgDn.style.width = x - x0 + "px";
+            e.PgUp.style.height = e.PgDn.style.height = dy0 + "px";
+            e.PgDn.style.left = x + dx + "px";
+
+            if (resizing) {
+
+                if (pcss) {
+                    fontSizeSheet = document.getElementById(name + "_pcss");
+                    fontSizeSheetParent = fontSizeSheet.parentNode;
+                    fontSizeSheetParent.removeChild(fontSizeSheet);
+                }
+                fontSizeSheet = document.createElement('style');
+                fontSizeSheet.innerHTML = "div#" + e.divname + " { font-size:" + fontSizePx + "px; }";
+                fontSizeSheet.setAttribute("id", name + "_pcss");
+                document.head.appendChild(fontSizeSheet);
+                pcss = true;
+
+                if (target_off > -1) {
+
+                    w_offset = 0;
+                    currentPage = 0;
+                    var olap = 0, target = (target_nxt - target_off) / 2;
+
+                    renderText();
+
                     olap = overlap(target_off, target_nxt, w_offset, w_nextpage);
+
+                    while (olap < target && olap < (w_nextpage - w_offset)) {
+                        nextPage();
+                        olap = overlap(target_off, target_nxt, w_offset, w_nextpage);
+                    }
                 }
             }
-        }
 
         renderText();
     }
+            
+        }
+
+        
+        
+    }
+    page = new TextPage();
+    
+    
     
     
 
