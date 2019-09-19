@@ -1,138 +1,11 @@
 /* global document */
-function TextFrame(name, layer) {
+function Reader(readerid) {
     'use strict';
     var e,                  // elements
-        text,                // frame text
-        page;               // page properties
-
-    function FrameElements() {
-        var Main,
-            Inner,
-            Outer,
-            PgUp,
-            PgDn,
-
-            innerName = name,
-            outerName = name + "_out",
-            pgUpName = name + "_pgup",
-            pgDnName = name + "_pgdn",
-            hideName = name + "_hide",
-            sheet = document.createElement('style');
-
-        Main = document.getElementById("_main");
-        Main.innerHTML += "<div id='" + innerName + "'></div>" + "\n";
-        Main.innerHTML += "<div id='" + outerName + "'></div>" + "\n";
-        Main.innerHTML += "<div id='" + pgUpName + "'></div>" + "\n";
-        Main.innerHTML += "<div id='" + pgDnName + "'></div>" + "\n";
-        Inner = document.getElementById(innerName);
-        Outer = document.getElementById(outerName);
-        PgUp = document.getElementById(pgUpName);
-        PgDn = document.getElementById(pgDnName);
-
-        sheet = document.createElement('style');
-        sheet.innerHTML = "div#" + innerName + "{ position:absolute; z-index:" + (layer + 1) + "; overflow: visible; border: 0; display: none; }\n" +
-            "div#" + outerName + "{ position:absolute; z-index:" + layer + "; border: 1px solid; display: none; }\n" +
-            "div#" + pgUpName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; display: none; }\n" +
-            "div#" + pgDnName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; display: none; }\n" +
-            "div#" + pgUpName + ":hover " + "{ background: linear-gradient(90deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" +
-            "div#" + pgDnName + ":hover " + "{ background: linear-gradient(270deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" +
-            "div#" + pgUpName + ":active " + "{ background: linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 100%); }\n" +
-            "div#" + pgDnName + ":active " + "{ background: linear-gradient(270deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 100%); }\n" +
-            "a#" + hideName + " { visibility: hidden; }";
-        sheet.setAttribute("id", name + "_css");
-        document.head.appendChild(sheet);
-        
-        
-        return {
-            Inner: Inner,
-            Outer: Outer,
-            PgUp: PgUp,
-            PgDn: PgDn,
-            divname: innerName
-        };
-    }
-    e = new FrameElements();
-
-    function ParsedText(input) {
-        var src,
-            start = [],
-            end = [],
-            format = [],
-            length = 0,
-            
-            i,
-            c,
-            n = 0,
-            space = true,
-            openTags = 0,
-            formatStart = 0;
-
-        src = input;
-
-        for (i = 0; i < src.length; i += 1) {
-            c = src.charAt(i);
-
-            if (c === '<') {
-                i += 1;
-                c = src.charAt(i);
-
-                if (c === '/') {
-                    if (!space) {
-                        if (src.charAt(i + 1) === 'p' && src.charAt(i + 2) === '>') {
-                            end[n] = i - 1;
-                            space = true;
-                            n += 1;
-                        }
-                    }   // </p> means end of word
-                    openTags -= 1;
-                } else {
-                    if (openTags === 0) {
-                        formatStart = i - 1;
-                    }
-                    openTags += 1;
-                }   // opening tag
-
-                do {
-                    i += 1;
-                    c = src.charAt(i);
-                    if (c === '/') {
-                        if (src.charAt(i + 1) === '>') {
-                            openTags -= 1;
-                        }
-                    }
-                } while (c !== '>');
-            } else {
-                if (c === ' ' || c === '—' || c === '-' || c === '\r' || c === '\n') {
-                    if (!space) {
-                        end[n] = i;
-                        space = true;
-                        n += 1;
-                    }
-                } else {
-                    if (space) {
-                        start[n] = i;
-                        format[n] = formatStart;
-                        space = false;
-                    }
-                }
-            }   // not a tag, process words and spaces
-        }
-        length = n;
-        
-        return {
-            text: text,
-            start: start,
-            end: end,
-            format: format,
-            length: length
-        };
-    }
-    function setText(input) {
-        text = new ParsedText(input);
-    }
+        main;               // main text frame
     
-    function TextPage() {
-        var visible = false,
+    function TextFrame(frameid, layer) {
+        var e,
             margin = {
                 top: 1,
                 left: 1,
@@ -145,34 +18,77 @@ function TextFrame(name, layer) {
                 right: 1.75,
                 bottom: 1
             },
+            text,
+            y,
+            dy,
+            offset,
+            nxtpage,
+            wordsInPage,
             fontSize,
-            resizing = false,
+            fontSizePx,
+            currentPage,
+            pageStart = [];
         
-        function render() {
+        function FrameElements() {
+            var Main,
+                Inner,
+                Outer,
+                PgUp,
+                PgDn,
+
+                innerName = frameid,
+                outerName = frameid + "_out",
+                pgUpName = frameid + "_pgup",
+                pgDnName = frameid + "_pgdn",
+                sheet = document.createElement('style');
+
+            Main = document.getElementById("_main");
+            Main.innerHTML += "<div id='" + innerName + "'></div>" + "\n";
+            Main.innerHTML += "<div id='" + outerName + "'></div>" + "\n";
+            Main.innerHTML += "<div id='" + pgUpName + "'></div>" + "\n";
+            Main.innerHTML += "<div id='" + pgDnName + "'></div>" + "\n";
+            Inner = document.getElementById(innerName);
+            Outer = document.getElementById(outerName);
+            PgUp = document.getElementById(pgUpName);
+            PgDn = document.getElementById(pgDnName);
+
+            sheet = document.createElement('style');
+            sheet.innerHTML = "div#" + innerName + "{ position:absolute; z-index:" + (layer + 1) + "; overflow: visible; border: 0; display: none; }\n" +
+                "div#" + outerName + "{ position:absolute; z-index:" + layer + "; border: 1px solid; display: none; }\n" +
+                "div#" + pgUpName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; display: none; }\n" +
+                "div#" + pgDnName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; display: none; }\n" +
+                "div#" + pgUpName + ":hover " + "{ background: linear-gradient(90deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" +
+                "div#" + pgDnName + ":hover " + "{ background: linear-gradient(270deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" +
+                "div#" + pgUpName + ":active " + "{ background: linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 100%); }\n" +
+                "div#" + pgDnName + ":active " + "{ background: linear-gradient(270deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 100%); }";
+            sheet.setAttribute("id", frameid + "_css");
+            document.head.appendChild(sheet);
+
+
+            return {
+                Inner: Inner,
+                Outer: Outer,
+                PgUp: PgUp,
+                PgDn: PgDn,
+                InnerID: innerName
+            };
+        }
+        e = new FrameElements();
+
+        function PositionPage() {
             var scrDX,
                 scrDY,
-                fontSizePx,
-                paddingLeft,
-                paddingRight,
-                paddingTop,
-                paddingBottom,
-                x0,
-                y0,
                 dx0,
                 dy0,
-                x,
-                y,
+                x0,
+                y0,
                 dx,
-                dy,
-                textBottom,
-                pcss = false,
-                fontSizeSheet,
-                fontSizeSheetParent;
-
-            if (!visible) {
-                return;
-            }
-
+                x,
+                paddingTop,
+                paddingBottom,
+                paddingLeft,
+                paddingRight;
+        
             scrDX = document.documentElement.clientWidth;
             scrDY = document.documentElement.clientHeight;
             dx0 = scrDX - margin.left - margin.right;
@@ -190,7 +106,6 @@ function TextFrame(name, layer) {
             dy = dy0 - paddingTop - paddingBottom;
             x = x0 + paddingLeft;
             y = y0 + paddingTop;
-            textBottom = y + dy;
 
             e.Outer.style.left = x0 + "px";
             e.Outer.style.top = y0 + "px";
@@ -208,62 +123,234 @@ function TextFrame(name, layer) {
             e.PgDn.style.width = x - x0 + "px";
             e.PgUp.style.height = e.PgDn.style.height = dy0 + "px";
             e.PgDn.style.left = x + dx + "px";
+        }
+        
+        function ParsedText(input) {
+            var src,
+                start = [],
+                end = [],
+                format = [],
+                length = 0,
 
-            if (resizing) {
+                i,
+                c,
+                n = 0,
+                space = true,
+                openTags = 0,
+                formatStart = 0;
 
-                if (pcss) {
-                    fontSizeSheet = document.getElementById(name + "_pcss");
-                    fontSizeSheetParent = fontSizeSheet.parentNode;
-                    fontSizeSheetParent.removeChild(fontSizeSheet);
-                }
-                fontSizeSheet = document.createElement('style');
-                fontSizeSheet.innerHTML = "div#" + e.divname + " { font-size:" + fontSizePx + "px; }";
-                fontSizeSheet.setAttribute("id", name + "_pcss");
-                document.head.appendChild(fontSizeSheet);
-                pcss = true;
+            src = input;
 
-                if (target_off > -1) {
+            for (i = 0; i < src.length; i += 1) {
+                c = src.charAt(i);
 
-                    w_offset = 0;
-                    currentPage = 0;
-                    var olap = 0, target = (target_nxt - target_off) / 2;
+                if (c === '<') {
+                    i += 1;
+                    c = src.charAt(i);
 
-                    renderText();
+                    if (c === '/') {
+                        if (!space) {
+                            if (src.charAt(i + 1) === 'p' && src.charAt(i + 2) === '>') {
+                                end[n] = i - 1;
+                                space = true;
+                                n += 1;
+                            }
+                        }   // </p> means end of word
+                        openTags -= 1;
+                    } else {
+                        if (openTags === 0) {
+                            formatStart = i - 1;
+                        }
+                        openTags += 1;
+                    }   // opening tag
 
-                    olap = overlap(target_off, target_nxt, w_offset, w_nextpage);
-
-                    while (olap < target && olap < (w_nextpage - w_offset)) {
-                        nextPage();
-                        olap = overlap(target_off, target_nxt, w_offset, w_nextpage);
+                    do {
+                        i += 1;
+                        c = src.charAt(i);
+                        if (c === '/') {
+                            if (src.charAt(i + 1) === '>') {
+                                openTags -= 1;
+                            }
+                        }
+                    } while (c !== '>');
+                } else {
+                    if (c === ' ' || c === '—' || c === '-' || c === '\r' || c === '\n') {
+                        if (!space) {
+                            end[n] = i;
+                            space = true;
+                            n += 1;
+                        }
+                    } else {
+                        if (space) {
+                            start[n] = i;
+                            format[n] = formatStart;
+                            space = false;
+                        }
                     }
-                }
+                }   // not a tag, process words and spaces
+            }
+            length = n;
+
+            return {
+                text: text,
+                start: start,
+                end: end,
+                format: format,
+                length: length
+            };
+        }
+        function setText(input) {
+            text = new ParsedText(input);
+        }
+        
+        function trimTextBy(word) {
+            var txt = "";
+            if (text.format[offset] < text.start[offset]) {
+                txt += "<a style='visibility:hidden;'>" + text.src.substring(text.format[offset], text.start[offset]) + "</a>";
+            }
+            if (word < text.length) {
+                txt += text.src.substring(text.start[offset], text.start[word]) + "<a id='" + frameid + "tmp' style='visibility:hidden;'>" + text.src.substring(text.start[word], text.end[word]) + "</a>";
+            } else {
+                txt += text.src.substring(text.start[offset]);
+            }
+            e.Inner.innerHTML = txt;
+        }
+        
+        function isWordVisible(word) {
+            if (word >= text.length) {
+                return false;
+            }
+            trimTextBy(word);
+            
+            if (document.getElementById(frameid + "tmp").getBoundingClientRect().bottom < y + dy) {
+                return true;
+            }
+            return false;
+        }
+        
+        function renderText() {
+            var textOverhead,
+                overhead,
+                first,
+                last,
+                step,
+                i;
+            
+            e.Inner.style.top = y + "px";
+            if (text.format[offset] < text.start[offset]) {
+                textOverhead = "<a id='" + frameid + "tmp1'>" +
+                    text.src.substring(text.format[offset], text.start[offset]) +
+                    "</a><a id='" + frameid + "tmp2'>" +
+                    text.src.substring(text.start[offset], text.end[offset]) +
+                    "</a>";
+                e.Inner.innerHTML = textOverhead;
+                overhead = document.getElementById(frameid + "tmp2").getBoundingClientRect().top -
+                    document.getElementById(frameid + "tmp1").getBoundingClientRect().top;
+                frame.style.top = y - overhead + "px";
             }
 
-        renderText();
-    }
+            first = offset;
+            step = (wordsInPage > 0) ? wordsInPage : 256;
+            last = offset + step;
+            while (isWordVisible(last)) {
+                first = last;
+                last += step;
+            }
+            if (last > text.length) {
+                last = text.length;
+            }
+            while (last - first > 1) {
+                i = Math.floor((first + last) / 2);
+                if (isWordVisible(i)) {
+                    first = i;
+                } else {
+                    last = i;
+                }
+            }
+            trimTextBy(last);
+            nxtpage = last;
+            if (nxtpage < text.length) {
+                wordsInPage = nxtpage - offset;
+            }
+        }
+
+        function renderPage() {
+            var fontSizeSheet,
+                fontSizeSheetParent,
+                targetOffset,
+                targetNxt,
+                olap2;
             
+            function overlap(a1, b1, a2, b2) {
+                var max_a = (a1 > a2) ? a1 : a2,
+                    min_b = (b1 < b2) ? b1 : b2,
+                    over = min_b - max_a + 1;
+                if (over < 0) {
+                    return 0;
+                }
+                return over;
+            }
+            
+            fontSizeSheet = document.getElementById(frameid + "_pcss");
+            if (fontSizeSheet !== null) {
+                fontSizeSheetParent = fontSizeSheet.parentNode;
+                fontSizeSheetParent.removeChild(fontSizeSheet);
+            }
+            fontSizeSheet = document.createElement('style');
+            fontSizeSheet.innerHTML = "div#" + frameid + " { font-size:" + fontSizePx + "px; }";
+            fontSizeSheet.setAttribute("id", frameid + "_pcss");
+            document.head.appendChild(fontSizeSheet);
+
+            if (offset > 0) {
+                targetOffset = offset;
+                targetNxt = nxtpage;
+
+                offset = 0;
+                currentPage = 0;
+                
+                while (true) {
+                    renderText();
+                    olap2 = overlap(targetOffset, targetNxt, offset, nxtpage) * 2;
+                    if (olap2 >= (targetNxt - targetOffset) || olap2 >= (nxtpage - offset)) {
+                        break;
+                    }
+                    pageStart[currentPage] = offset;
+                    currentPage += 1;
+                    offset = nxtpage;
+                }
+            }
+        }
+        
+        function nextPage() {
+            if (nxtpage >= text.length) {
+                return;
+            }
+            pageStart[currentPage] = offset;
+            currentPage += 1;
+            offset = nxtpage;
+            renderText();
         }
 
+        function prevPage() {
+            if (offset === 0) {
+                return;
+            }
+            currentPage -= 1;
+            offset = pageStart[currentPage];
+            renderText();
+        }
         
+ 
+
         
     }
-    page = new TextPage();
+    main = new TextFrame(readerid, layer);
+    
     
     
     
     
 
-    function show() {
-        if (visible) {
-            return;
-        }
-        Inner.style.display = "block";
-        Outer.style.display = "block";
-        PgUp.style.display = "block";
-        PgDn.style.display = "block";
-        visible = true;
-        renderPage();
-    }
 */
     
     return {
