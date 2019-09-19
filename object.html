@@ -9,7 +9,7 @@
   <meta name="author" content="">
 <style>
 body { overflow: hidden; }
-p {text-align: justify; text-indent: 2em; margin: 0; }
+    p {text-align: justify; text-indent: 2em; margin: 0; }
 </style>
 
 </head>
@@ -52,9 +52,9 @@ function runReader(t) {
     main.show();
 } */
 
-var main = new Reader("main", 90);
-main.setMainText(txt);
-main.show();    
+var main = new Reader("main");
+main.setText(txt);
+main.run(); 
 
 
 

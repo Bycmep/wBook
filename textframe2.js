@@ -1,8 +1,7 @@
 /* global document */
 function Reader(readerid) {
     'use strict';
-    var e,                  // elements
-        main;               // main text frame
+    var main;               // main text frame
     
     function TextFrame(frameid, layer) {
         var e,
@@ -24,7 +23,7 @@ function Reader(readerid) {
             offset,
             nxtpage,
             wordsInPage,
-            fontSize,
+            fontSize = 40,
             fontSizePx,
             currentPage,
             pageStart = [];
@@ -53,10 +52,10 @@ function Reader(readerid) {
             PgDn = document.getElementById(pgDnName);
 
             sheet = document.createElement('style');
-            sheet.innerHTML = "div#" + innerName + "{ position:absolute; z-index:" + (layer + 1) + "; overflow: visible; border: 0; display: none; }\n" +
-                "div#" + outerName + "{ position:absolute; z-index:" + layer + "; border: 1px solid; display: none; }\n" +
-                "div#" + pgUpName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; display: none; }\n" +
-                "div#" + pgDnName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; display: none; }\n" +
+            sheet.innerHTML = "div#" + innerName + "{ position:absolute; z-index:" + (layer + 1) + "; overflow: visible; border: 0; background: beige; }\n" +
+                "div#" + outerName + "{ position:absolute; z-index:" + layer + "; border: 1px solid; background: azure; }\n" +
+                "div#" + pgUpName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; }\n" +
+                "div#" + pgDnName + "{ position:absolute; z-index:" + (layer + 1) + "; border: 0; }\n" +
                 "div#" + pgUpName + ":hover " + "{ background: linear-gradient(90deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" +
                 "div#" + pgDnName + ":hover " + "{ background: linear-gradient(270deg, rgba(0,0,0,0.075) 0%, rgba(0,0,0,0) 100%); }\n" +
                 "div#" + pgUpName + ":active " + "{ background: linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 100%); }\n" +
@@ -64,18 +63,16 @@ function Reader(readerid) {
             sheet.setAttribute("id", frameid + "_css");
             document.head.appendChild(sheet);
 
-
             return {
                 Inner: Inner,
                 Outer: Outer,
                 PgUp: PgUp,
-                PgDn: PgDn,
-                InnerID: innerName
+                PgDn: PgDn
             };
         }
         e = new FrameElements();
 
-        function PositionPage() {
+        function positionPage() {
             var scrDX,
                 scrDY,
                 dx0,
@@ -115,6 +112,7 @@ function Reader(readerid) {
             e.Inner.style.top = y + "px";
             e.Inner.style.width = dx + "px";
             e.Inner.style.height = dy + "px";
+            
 
             e.PgUp.style.left = x0 + "px";
             e.PgDn.style.left = x0 + dx + "px";
@@ -192,6 +190,7 @@ function Reader(readerid) {
             length = n;
 
             return {
+                src: src,
                 text: text,
                 start: start,
                 end: end,
@@ -201,6 +200,8 @@ function Reader(readerid) {
         }
         function setText(input) {
             text = new ParsedText(input);
+            offset = 0;
+            currentPage = 0;
         }
         
         function trimTextBy(word) {
@@ -246,7 +247,7 @@ function Reader(readerid) {
                 e.Inner.innerHTML = textOverhead;
                 overhead = document.getElementById(frameid + "tmp2").getBoundingClientRect().top -
                     document.getElementById(frameid + "tmp1").getBoundingClientRect().top;
-                frame.style.top = y - overhead + "px";
+                e.Inner.style.top = y - overhead + "px";
             }
 
             first = offset;
@@ -311,6 +312,7 @@ function Reader(readerid) {
                 while (true) {
                     renderText();
                     olap2 = overlap(targetOffset, targetNxt, offset, nxtpage) * 2;
+                    console.log(olap2 + ": " + offset + "-" + nxtpage + " -> " + targetOffset + "-" + targetNxt);
                     if (olap2 >= (targetNxt - targetOffset) || olap2 >= (nxtpage - offset)) {
                         break;
                     }
@@ -318,6 +320,8 @@ function Reader(readerid) {
                     currentPage += 1;
                     offset = nxtpage;
                 }
+            } else {
+                renderText();
             }
         }
         
@@ -340,22 +344,37 @@ function Reader(readerid) {
             renderText();
         }
         
- 
-
+        function onResize() {
+            positionPage();
+            renderPage();
+        }
+        
+        window.addEventListener("resize", onResize);
+        e.PgDn.addEventListener("click", nextPage);
+        e.PgUp.addEventListener("click", prevPage);
+        
+        return {
+            position: positionPage,
+            setText: setText,
+            renderText: renderText,
+            renderPage: renderPage,
+            nextPage: nextPage,
+            prevPage: prevPage
+        };
+    }
+    main = new TextFrame(readerid, 90);
+    
+    function run() {
+        main.position();
+        main.renderPage();
+        
         
     }
-    main = new TextFrame(readerid, layer);
-    
-    
-    
-    
-    
 
-*/
     
     return {
-        setText: setText
-//        show: show
+        setText: main.setText,
+        run: run
     };
 
 }
