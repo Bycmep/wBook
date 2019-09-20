@@ -309,7 +309,6 @@ function Reader(readerid) {
                 while (true) {
                     renderText();
                     olap2 = overlap(targetOffset, targetNxt, offset, nxtpage) * 2;
-                    console.log(olap2 + ": " + offset + "-" + nxtpage + " -> " + targetOffset + "-" + targetNxt);
                     if (olap2 >= (targetNxt - targetOffset) || olap2 >= (nxtpage - offset)) {
                         break;
                     }
