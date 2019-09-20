@@ -1,0 +1,158 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+<style>
+</style>
+</head>
+
+<body>
+    
+<script src="jszip.js"></script>
+<script src="jszip-utils.js"></script>
+    
+<script>
+/*    var zip = new JSZip();
+zip.file("Hello.txt", "Hello World\n");
+var img = zip.folder("images");
+img.file("smile.gif", imgData, {base64: true});
+zip.generateAsync({type:"blob"})
+.then(function(content) {
+    // see FileSaver.js
+    saveAs(content, "example2.zip");
+});*/
+
+/*
+var zip = new JSZip();
+zip.file("example.zip").async("arraybuffer").then(function(content) {
+      console.log(content);
+      var buffer = new Uint8Array(content);
+      var blob = new Blob([buffer.buffer]);
+      console.log(blob);
+    var img = new Image;
+    img.onload = function() {
+        document.body.appendChild(this)
+      }
+    img.src = URL.createObjectURL(blob);
+    },
+
+function(e) {
+  console.log("Error reading " + file.name + " : " + e.message);
+}); */
+
+
+    
+    
+window.onload = function() {
+var zip = new JSZip();
+
+    function getZipContent(zipfile, file, datatype) {  // datatype: "string", "base64"
+        var output;
+        var ready = false;
+    
+        var promise = new JSZip.external.Promise(function (resolve, reject) {
+            JSZipUtils.getBinaryContent(zipfile, function(err, data) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(data);
+                }
+            });
+        });
+
+        promise.then(JSZip.loadAsync)                     // 2) chain with the zip promise
+        .then(function(zip) {
+            return zip.file(file).async(datatype); // 3) chain with the text content promise
+        })
+        .then(function success(text) {                    // 4) display the result
+            console.log(text);
+        }, function error(e) {
+            console.log(e);
+        });
+        
+    }
+    
+    console.log(getZipContent("test.zip", "test.html", "string"));
+    
+    /*
+    var promise = new JSZip.external.Promise(function (resolve, reject) {
+    JSZipUtils.getBinaryContent('test.zip', function(err, data) {
+        if (err) {
+            reject(err);
+        } else {
+            resolve(data);
+        }
+    });
+});
+
+promise.then(JSZip.loadAsync)                     // 2) chain with the zip promise
+.then(function(zip) {
+    return zip.file("test.htm").async("string"); // 3) chain with the text content promise
+})
+.then(function success(text) {                    // 4) display the result
+    console.log(text);
+}, function error(e) {
+    console.log(e);
+});
+*/
+
+}
+
+
+
+
+
+
+/*    
+      function loadImage(url, filename) {
+        var request = new XMLHttpRequest();
+        request.open("GET", url);
+        request.responseType = "blob";
+        request.onload = function() {
+          console.log(this.response);
+          var response = this.response;
+//           filename = "image." + response.type.split("/")[1];
+            console.log(filename);
+          zip.file("temp.zip", response);
+          zip.file(filename)
+            .async("string")
+            .then(function(content) {
+                console.log(content);
+//                var img = new Image;
+//                img.onload = function() {
+//                  document.body.appendChild(this)
+//                }
+//                img.src = "data:" + response.type + ";base64," + content;
+              },
+              function(e) {
+                console.log("Error reading " 
+                            + file.name + " : " 
+                            + e.message);
+              });
+          
+        }
+        request.send()
+      }
+
+      loadImage("test.zip", "test.html")
+    } */
+/*
+    var zip = new JSZip();
+    
+zip.loadAsync("test.zip") .then(function(zip) {
+  zip.file('test.html')
+   .async("string")
+   .then(function (content) { console.log(content); });
+
+}, function (e) {
+     console.log("Error reading " + file.name + " : " + e.message); });    
+   */ 
+    
+</script>
+    
+</body>
+</html>
